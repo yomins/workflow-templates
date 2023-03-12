@@ -1,28 +1,40 @@
-name: Reusible workflow analys
+name: analyse
 
 on:
   workflow_call:
-  
-  jobs:
-    analyze:
-      name: Analyze
-      runs-on: ubuntu-latest
-      needs: [Build, Release]
-      permissions:
-        actions: read
-        contents: read
-        security-events: write
+    inputs:
+      languages:
+        description: "Optional input to set languages for CodeQL check. Supported values are: 'cpp', 'csharp', 'go', 'java', 'javascript', 'typescript', 'python', 'ruby'. To set multiple languages, use the same syntax as you can see in the default value."
+        required: false
+        type: string
+        default: "['javascript', 'csharp']"
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
-      steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{fromJson(inputs.languages)}}
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: javascript
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:javascript"
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{matrix.language}}
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
